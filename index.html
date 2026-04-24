@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DPLP — 登録・承認フロー v2</title>
+<style>
+:root {
+  --bg0:#06101c; --bg1:#0a1628; --bg2:#0f1e36; --bg3:#152540; --bg4:#1a2e4e; --bg5:#20375c;
+  --br:rgba(255,255,255,0.07); --br2:rgba(255,255,255,0.12); --br3:rgba(255,255,255,0.2);
+  --tx:#dce5f2; --tx2:#7a8fa8; --tx3:#3e5268; --tx4:#1e3048;
+  --gr:#10e86a; --gr2:rgba(16,232,106,0.14); --gr3:rgba(16,232,106,0.06);
+  --tl:#00d4c8; --bl:#3b82f6; --pu:#9b5ef5; --ye:#f0a828; --re:#e84848; --re2:rgba(232,72,72,0.13);
+  --fn:'Segoe UI','Hiragino Sans','Yu Gothic UI',sans-serif;
+  --fm:'Consolas','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh;background:var(--bg0);color:var(--tx);font-family:var(--fn);font-size:13px;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.screen{display:none}.screen.active{display:block}
+.bgg{position:fixed;inset:0;background-image:linear-gradient(rgba(16,232,106,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(16,232,106,0.018) 1px,transparent 1px);background-size:38px 38px;pointer-events:none;z-index:0}
+.glow{position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(16,232,106,0.035) 0%,transparent 70%);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 16px 40px}
+.logo-area{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:20px}
+.logo-ic{width:48px;height:48px;background:linear-gradient(135deg,var(--gr),var(--tl));border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 24px rgba(16,232,106,0.25);margin:0 auto 8px}
+.logo-t{font-size:19px;font-weight:700;letter-spacing:.3px}
+.logo-s{font-size:10px;color:var(--tx2);text-align:center}
+.card{background:var(--bg2);border:1px solid var(--br2);border-radius:14px;padding:22px;width:100%;max-width:460px;margin-bottom:10px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.card-wide{max-width:700px}
+.ct{font-size:14px;font-weight:700;margin-bottom:3px}
+.cs{font-size:11px;color:var(--tx2);margin-bottom:16px}
+.lbl{display:block;font-size:9px;font-weight:700;color:var(--tx2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--br2);border-radius:7px;padding:8px 11px;color:var(--tx);font-size:12px;outline:none;transition:.15s;font-family:var(--fn)}
+.fi:focus{border-color:var(--gr);box-shadow:0 0 0 2px rgba(16,232,106,0.07)}
+.fi::placeholder{color:var(--tx4)}
+.fsel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0l4.5 5 4.5-5z' fill='%233e5268'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:24px}
+.frow{display:flex;gap:9px}.frow>div{flex:1}
+.fgrp{margin-bottom:12px}
+.fh{font-size:9px;color:var(--tx3);margin-top:3px;line-height:1.5}
+.fh.ok{color:var(--gr)}.fh.err{color:var(--re)}.fh.warn{color:var(--ye)}
+.fta{resize:vertical;min-height:68px;height:auto}
+.sep{height:1px;background:var(--br);margin:12px 0}
+.dvs{display:flex;align-items:center;gap:8px;margin:12px 0}
+.dvs::before,.dvs::after{content:'';flex:1;height:1px;background:var(--br2)}
+.dvs-t{font-size:9px;color:var(--tx3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--br2);background:var(--bg3);color:var(--tx2);font-size:11px;font-weight:600;cursor:pointer;transition:.12s;margin-bottom:6px;font-family:var(--fn)}
+.btn:hover{background:var(--bg4);color:var(--tx);border-color:var(--br3)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-p{background:var(--gr3);border-color:rgba(16,232,106,0.28);color:var(--gr)}
+.btn-p:hover{background:var(--gr2)}
+.btn-d{background:var(--re2);border-color:rgba(232,72,72,0.28);color:#f87171}
+.btn-d:hover{background:rgba(232,72,72,0.2)}
+.btn-g{background:transparent;border-color:transparent;color:var(--tx2);font-size:10px}
+.btn-g:hover{background:var(--bg3);border-color:var(--br)}
+.btn-sm{padding:5px 10px;font-size:10px;width:auto;margin-bottom:0}
+.al{padding:10px 13px;border-radius:9px;font-size:11px;display:flex;gap:9px;align-items:flex-start;margin-bottom:12px;line-height:1.6;border:1px solid}
+.al-ic{font-size:14px;flex-shrink:0;margin-top:1px}
+.al-info{background:rgba(59,130,246,0.07);border-color:rgba(59,130,246,0.22);color:#93c5fd}
+.al-warn{background:rgba(240,168,40,0.08);border-color:rgba(240,168,40,0.22);color:#fcd34d}
+.al-ok{background:var(--gr3);border-color:rgba(16,232,106,0.18);color:#86efac}
+.al-err{background:var(--re2);border-color:rgba(232,72,72,0.22);color:#fca5a5}
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700}
+.bg{background:var(--gr3);color:var(--gr);border:1px solid rgba(16,232,106,0.2)}
+.bb{background:rgba(59,130,246,0.1);color:#60a5fa;border:1px solid rgba(59,130,246,0.2)}
+.by{background:rgba(240,168,40,0.1);color:#fbbf24;border:1px solid rgba(240,168,40,0.2)}
+.br2{background:var(--re2);color:#f87171;border:1px solid rgba(232,72,72,0.2)}
+.bn{background:var(--bg3);color:var(--tx2);border:1px solid var(--br2)}
+.pw-bar{display:flex;gap:3px;margin-top:5px}
+.pw-seg{height:3px;flex:1;border-radius:2px;background:var(--bg5);transition:.3s}
+.otp-row{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.otp-in{width:44px;height:50px;background:var(--bg3);border:1.5px solid var(--br2);border-radius:9px;color:var(--tx);font-size:22px;font-weight:700;text-align:center;outline:none;transition:.15s;font-family:var(--fm)}
+.otp-in:focus{border-color:var(--gr)}
+.otp-in.ok{border-color:rgba(16,232,106,0.4);background:var(--gr3)}
+.chk-row{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--br)}
+.chk{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--br2);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;font-size:10px;font-weight:700;color:var(--gr);transition:.15s}
+.chk.on{background:var(--gr3);border-color:rgba(16,232,106,0.4)}
+.chk-lb{font-size:11px;color:var(--tx);line-height:1.5}
+.chk-lb a{color:var(--gr);cursor:pointer;text-decoration:underline}
+.tag{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:500;cursor:pointer;border:1px solid var(--br2);background:var(--bg3);color:var(--tx2);transition:.15s;margin:2px}
+.tag:hover{border-color:var(--br3)}
+.tag.on{background:var(--gr3);border-color:rgba(16,232,106,0.3);color:var(--gr)}
+.steps-wrap{display:flex;align-items:center;margin-bottom:16px;width:100%;max-width:460px}
+.step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative}
+.step:not(:last-child)::after{content:'';position:absolute;left:50%;right:-50%;top:14px;height:1px;background:var(--br2);z-index:0}
+.step.done:not(:last-child)::after,.step.cur:not(:last-child)::after{background:rgba(16,232,106,0.35)}
+.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1.5px solid var(--br2);background:var(--bg3);color:var(--tx3);position:relative;z-index:1;transition:.2s}
+.step.cur .step-dot{border-color:var(--gr);background:var(--gr3);color:var(--gr)}
+.step.done .step-dot{border-color:var(--gr);background:var(--gr3);color:var(--gr)}
+.step-lb{font-size:9px;color:var(--tx3);margin-top:4px;text-align:center}
+.step.cur .step-lb,.step.done .step-lb{color:var(--tx2)}
+.verify-box{background:var(--bg3);border:1px solid var(--br2);border-radius:11px;padding:16px;text-align:center;margin-bottom:14px}
+.verify-ic{font-size:32px;margin-bottom:6px}
+.verify-t{font-size:13px;font-weight:700;margin-bottom:3px}
+.verify-d{font-size:13px;font-weight:700;color:var(--gr);margin:6px 0}
+.verify-s{font-size:11px;color:var(--tx2)}
+.timer-txt{font-size:10px;color:var(--tx3);margin-top:6px}
+.demo-code{padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:12px;font-size:11px;color:var(--tx2)}
+.demo-code b{color:var(--gr);font-size:15px;font-family:var(--fm);letter-spacing:4px}
+.status-card{text-align:center;padding:18px;border-radius:12px;margin-bottom:16px;border:1px solid}
+.sc-pend{background:rgba(240,168,40,0.06);border-color:rgba(240,168,40,0.2)}
+.sc-ok{background:var(--gr3);border-color:rgba(16,232,106,0.2)}
+.sc-err{background:var(--re2);border-color:rgba(232,72,72,0.2)}
+.sc-ic{font-size:32px;margin-bottom:8px}
+.sc-t{font-size:14px;font-weight:700;margin-bottom:4px}
+.sc-s{font-size:11px;color:var(--tx2)}
+.flow-wrap{background:var(--bg3);border-radius:10px;padding:13px;margin-bottom:13px}
+.flow-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--br);align-items:flex-start}
+.flow-item:last-child{border-bottom:none}
+.flow-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.fn-done{background:var(--gr3);color:var(--gr);border:1px solid rgba(16,232,106,0.3)}
+.fn-act{background:rgba(240,168,40,0.1);color:#fbbf24;border:1px solid rgba(240,168,40,0.25)}
+.fn-wait{background:var(--bg4);color:var(--tx3);border:1px solid var(--br)}
+.flow-t{font-size:11px;font-weight:600;margin-bottom:2px}
+.flow-s{font-size:10px;color:var(--tx2)}
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--br)}
+.info-row:last-child{border-bottom:none}
+.info-l{font-size:10px;color:var(--tx2)}
+.info-v{font-size:10px;font-weight:600}
+.admin-wrap{position:relative;z-index:1;padding:16px;max-width:760px;margin:0 auto}
+.admin-hdr{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--br)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.metric{background:var(--bg2);border:1px solid var(--br);border-radius:10px;padding:11px;text-align:center}
+.metric-n{font-size:22px;font-weight:700;line-height:1}
+.metric-l{font-size:9px;color:var(--tx2);margin-top:3px}
+.tabs{display:flex;gap:2px;background:var(--bg2);border-radius:8px;padding:3px;margin-bottom:14px;border:1px solid var(--br)}
+.tab{padding:5px 12px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;color:var(--tx2);transition:.12s;flex:1;text-align:center}
+.tab:hover{color:var(--tx);background:var(--bg3)}
+.tab.act{background:var(--bg4);color:var(--tx);border:1px solid var(--br2)}
+.app-card{background:var(--bg2);border:1px solid var(--br);border-radius:11px;padding:14px;margin-bottom:9px}
+.app-card:hover{border-color:var(--br2)}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sec-it{padding:10px;background:var(--bg2);border:1px solid var(--br);border-radius:9px;display:flex;gap:8px}
+.sec-ic{font-size:14px;flex-shrink:0;margin-top:1px}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--br2);border-radius:15px;padding:22px;width:90%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:mi .18s ease}
+@keyframes mi{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-t{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.modal-x{cursor:pointer;color:var(--tx3);font-size:18px;line-height:1}
+.modal-x:hover{color:var(--tx)}
+.toast-wrap{position:fixed;bottom:14px;right:14px;display:flex;flex-direction:column;gap:5px;z-index:2000;pointer-events:none}
+.toast{background:var(--bg3);border:1px solid var(--br2);border-radius:8px;padding:9px 14px;font-size:11px;color:var(--tx);display:flex;align-items:center;gap:7px;pointer-events:auto;max-width:290px;box-shadow:0 8px 22px rgba(0,0,0,.45);animation:tfin .2s ease}
+@keyframes tfin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.t-ok{border-left:2px solid var(--gr)}.t-err{border-left:2px solid var(--re)}.t-inf{border-left:2px solid var(--bl)}.t-wrn{border-left:2px solid var(--ye)}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1.5s linear infinite}
+</style>
+</head>
+<body>
+<div class="bgg"></div>
+<div class="glow"></div>
+<div class="toast-wrap" id="TC"></div>
+<div id="ROOT"></div>
+
+<script>
+'use strict';
+
+// ── STATE ──
+const S = {
+  view:'top', agree:{a1:false,a2:false,a3:false},
+  email:'', phone:'', adminTab:'pending',
+  modal:null, selApp:null,
+};
+
+// ── MOCK DATA ──
+const APPS = [
+  {id:1,name:'橋本 奈々', email:'hashimoto@hospital.jp', tel:'090-1234-5678', occ:'産婦人科医', pref:'熊本県', inst:'熊本大学病院', ev:true, sv:true, st:'pending', dt:'2025-06-10 10:22', note:'', pid:''},
+  {id:2,name:'木村 健太', email:'kimura@clinic.jp', tel:'080-9876-5432', occ:'小児科医', pref:'福岡県', inst:'福岡こども病院', ev:true, sv:true, st:'pending', dt:'2025-06-10 11:05', note:'', pid:''},
+  {id:3,name:'吉田 美穂', email:'yoshida@med.jp', tel:'070-5555-1234', occ:'助産師', pref:'大分県', inst:'大分赤十字病院', ev:true, sv:false, st:'pending', dt:'2025-06-10 12:30', note:'SMS未認証', pid:''},
+  {id:4,name:'西村 拓也', email:'nishimura@hosp.jp', tel:'090-0000-1111', occ:'新生児科医', pref:'宮崎県', inst:'宮崎大学医学部附属病院', ev:true, sv:true, st:'approved', dt:'2025-06-09 09:00', note:'', pid:'DPL-011'},
+  {id:5,name:'三田 裕子', email:'mita@maternity.jp', tel:'080-2222-3333', occ:'産婦人科医', pref:'長崎県', inst:'長崎大学病院', ev:true, sv:true, st:'rejected', dt:'2025-06-08 14:00', note:'所属施設確認取れず', pid:''},
+];
+
+let eTimer=null, sTimer=null;
+
+// ── TOAST ──
+function toast(msg, tp='ok') {
+  const c=document.getElementById('TC'); if(!c)return;
+  const t=document.createElement('div');
+  const ic={ok:'✓',err:'✕',inf:'ℹ',wrn:'⚠'};
+  const cs={ok:'t-ok',err:'t-err',inf:'t-inf',wrn:'t-wrn'};
+  t.className=`toast ${cs[tp]||'t-ok'}`;
+  t.innerHTML=`<span>${ic[tp]||'✓'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},3500);
+}
+
+// ── RENDER ──
+function R() { document.getElementById('ROOT').innerHTML = views[S.view]?views[S.view]():''; }
+
+// ── STEPS HELPER ──
+function mkSteps(cur) {
+  const ss=['基本情報','本人確認','プロフィール','完了'];
+  return `<div class="steps-wrap">${ss.map((s,i)=>{
+    const cls=i+1<cur?'done':i+1===cur?'cur':'';
+    const line=i<ss.length-1?`<div style="position:absolute;left:50%;right:-50%;top:14px;height:1px;background:${cls==='done'?'rgba(16,232,106,0.35)':'rgba(255,255,255,0.07)'};z-index:0"></div>`:'';
+    return `<div class="step ${cls}">${line}<div class="step-dot">${cls==='done'?'✓':i+1}</div><div class="step-lb">${s}</div></div>`;
+  }).join('')}</div>`;
+}
+
+// ── VIEWS ──
+const views = {
+
+// ─── TOP ───────────────────────────────────────
+top: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">🏥</div>
+    <div class="logo-t">DPLP Dashboard</div>
+    <div class="logo-s">災害時小児周産期リエゾン活動管理システム</div>
+  </div>
+  <div class="card">
+    <div class="ct">アカウントをお持ちの方</div>
+    <div class="cs">メールアドレスとパスワードでログイン</div>
+    <div class="fgrp"><label class="lbl">メールアドレス</label><input class="fi" type="email" placeholder="example@hospital.jp"></div>
+    <div class="fgrp"><label class="lbl">パスワード</label><input class="fi" type="password" placeholder="••••••••"></div>
+    <button class="btn btn-p" onclick="toast('ログインしました（本番時はSupabase Auth）','ok')">ログイン</button>
+    <div class="dvs"><span class="dvs-t">はじめての方</span></div>
+    <button class="btn" onclick="go('reg1')">📝 新規登録申請（医療従事者の方）</button>
+    <button class="btn btn-g" onclick="go('admin_login')" style="margin-top:2px">⚙️ 事務局（管理者）ログイン</button>
+    <div class="sep"></div>
+    <div style="background:var(--bg3);border-radius:9px;padding:12px">
+      <div style="font-size:11px;font-weight:700;margin-bottom:6px;color:var(--tx)">🔐 登録の流れ</div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.8">
+        ① メールアドレス + 携帯番号で本人確認<br>
+        ② プロフィール・所属情報を入力して申請<br>
+        ③ 事務局が内容を審査（1〜3営業日）<br>
+        ④ 承認後にログイン可能になります
+      </div>
+    </div>
+  </div>
+  <div style="font-size:9px;color:var(--tx4);text-align:center">個人情報は AES-256 暗号化して管理されます</div>
+</div>`,
+
+// ─── STEP 1 — 基本情報 ────────────────────────
+reg1: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">🏥</div>
+    <div class="logo-t">新規登録申請</div>
+    <div class="logo-s">Step 1 / 4 — 基本情報の入力</div>
+  </div>
+  ${mkSteps(1)}
+  <div class="card">
+    <div class="ct">基本情報・認証先の登録</div>
+    <div class="cs">入力した情報で本人確認を行います</div>
+    <div class="al al-info"><span class="al-ic">🔐</span><div>入力したメールアドレスと携帯番号に認証コードを送信します。<strong>両方の確認後</strong>、事務局が申請内容を審査します。</div></div>
+    <div class="frow">
+      <div class="fgrp"><label class="lbl">姓</label><input class="fi" id="r-sei" placeholder="田中"></div>
+      <div class="fgrp"><label class="lbl">名</label><input class="fi" id="r-mei" placeholder="美咲"></div>
+    </div>
+    <div class="frow">
+      <div class="fgrp"><label class="lbl">姓（フリガナ）</label><input class="fi" placeholder="タナカ"></div>
+      <div class="fgrp"><label class="lbl">名（フリガナ）</label><input class="fi" placeholder="ミサキ"></div>
+    </div>
+    <div class="sep"></div>
+    <div class="fgrp">
+      <label class="lbl">メールアドレス <span style="color:var(--re);font-size:9px;text-transform:none">※ 認証コードが届きます</span></label>
+      <input class="fi" id="r-email" type="email" placeholder="tanaka@hospital.jp" value="tanaka@hospital.jp">
+      <div class="fh">所属施設のアドレスを推奨します（審査がスムーズになります）</div>
+    </div>
+    <div class="fgrp">
+      <label class="lbl">携帯電話番号 <span style="color:var(--re);font-size:9px;text-transform:none">※ SMS認証コードが届きます</span></label>
+      <div style="display:flex;gap:8px">
+        <select class="fi fsel" style="width:86px;flex-shrink:0"><option>+81</option><option>+1</option></select>
+        <input class="fi" id="r-phone" type="tel" placeholder="090-XXXX-XXXX" value="090-1234-5678">
+      </div>
+      <div class="fh warn">IP電話・固定電話は使用不可。実在する携帯番号が必要です。</div>
+    </div>
+    <div class="sep"></div>
+    <div class="fgrp">
+      <label class="lbl">パスワード設定</label>
+      <input class="fi" id="r-pw" type="password" placeholder="8文字以上・英大小文字・数字・記号を含む" oninput="checkPw(this.value)">
+      <div class="pw-bar"><div class="pw-seg" id="ps1"></div><div class="pw-seg" id="ps2"></div><div class="pw-seg" id="ps3"></div><div class="pw-seg" id="ps4"></div></div>
+      <div id="pw-msg" class="fh">強度: 未入力</div>
+    </div>
+    <div class="fgrp">
+      <label class="lbl">パスワード（確認）</label>
+      <input class="fi" id="r-pw2" type="password" placeholder="同じパスワードをもう一度" oninput="checkPw2(this.value)">
+      <div id="pw2-msg" class="fh"></div>
+    </div>
+    <div class="sep"></div>
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px">同意事項</div>
+    <div class="chk-row"><div class="chk${S.agree.a1?' on':''}" id="ck1" onclick="toggleChk('ck1','a1')">${S.agree.a1?'✓':''}</div><div class="chk-lb"><a onclick="go('terms')">利用規約</a>を読み、同意します</div></div>
+    <div class="chk-row"><div class="chk${S.agree.a2?' on':''}" id="ck2" onclick="toggleChk('ck2','a2')">${S.agree.a2?'✓':''}</div><div class="chk-lb"><a onclick="go('privacy')">プライバシーポリシー</a>を読み、個人情報の取り扱いに同意します</div></div>
+    <div class="chk-row"><div class="chk${S.agree.a3?' on':''}" id="ck3" onclick="toggleChk('ck3','a3')">${S.agree.a3?'✓':''}</div><div class="chk-lb">登録情報が事務局および担当コアリエゾンに共有されることに同意します</div></div>
+    <button class="btn btn-p" id="btn-n1" onclick="next1()" style="margin-top:14px" ${allAgreed()?'':'disabled'}>メールアドレスの確認へ →</button>
+    <button class="btn btn-g" onclick="go('top')">← ログイン画面に戻る</button>
+  </div>
+</div>`,
+
+// ─── STEP 2a — メール認証 ─────────────────────
+email_verify: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">📧</div>
+    <div class="logo-t">メールアドレスの確認</div>
+    <div class="logo-s">Step 2a / 4 — メール認証</div>
+  </div>
+  ${mkSteps(2)}
+  <div class="card">
+    <div class="verify-box">
+      <div class="verify-ic">📧</div>
+      <div class="verify-t">確認メールを送信しました</div>
+      <div class="verify-d">${S.email||'tanaka@hospital.jp'}</div>
+      <div class="verify-s">上記のメールアドレスに6桁の確認コードを送信しました</div>
+    </div>
+    <div class="al al-warn"><span class="al-ic">⏰</span><div>コードの有効期限は<strong>10分</strong>です。届かない場合はスパムフォルダをご確認ください。</div></div>
+    <div style="text-align:center">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">6桁の確認コードを入力してください</div>
+      <div class="otp-row">
+        ${[0,1,2,3,4,5].map(i=>`<input class="otp-in" id="oe${i}" maxlength="1" type="text" inputmode="numeric" oninput="otpNext(this,'oe',${i},6)" onkeydown="otpBack(event,this,'oe',${i})">`).join('')}
+      </div>
+      <div class="timer-txt" id="e-timer-wrap">再送信まで <span id="et">60</span> 秒</div>
+      <button class="btn btn-sm btn-g" id="resend-e" style="display:none;margin:6px auto" onclick="startTimer('e')">メールを再送信</button>
+    </div>
+    <div class="demo-code">デモ用コード：<b>1 2 3 4 5 6</b></div>
+    <button class="btn btn-p" onclick="verifyEmail()">メールアドレスを確認する ✓</button>
+    <button class="btn btn-g" onclick="go('reg1')">← 前のステップへ</button>
+  </div>
+</div>`,
+
+// ─── STEP 2b — SMS認証 ────────────────────────
+sms_verify: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">📱</div>
+    <div class="logo-t">携帯電話番号の確認</div>
+    <div class="logo-s">Step 2b / 4 — SMS認証</div>
+  </div>
+  ${mkSteps(2)}
+  <div class="card">
+    <div class="verify-box">
+      <div class="verify-ic">📱</div>
+      <div class="verify-t">SMSを送信しました</div>
+      <div class="verify-d">${S.phone||'090-1234-5678'}</div>
+      <div class="verify-s">上記の携帯番号に6桁の確認コードをSMSで送信しました</div>
+    </div>
+    <div class="al al-info"><span class="al-ic">🔒</span><div>携帯番号の確認は<strong>なりすまし防止</strong>のために必須です。IP電話・固定電話へは送信されません。</div></div>
+    <div style="text-align:center">
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">SMSに届いた6桁のコードを入力してください</div>
+      <div class="otp-row">
+        ${[0,1,2,3,4,5].map(i=>`<input class="otp-in" id="os${i}" maxlength="1" type="text" inputmode="numeric" oninput="otpNext(this,'os',${i},6)" onkeydown="otpBack(event,this,'os',${i})">`).join('')}
+      </div>
+      <div class="timer-txt" id="s-timer-wrap">再送信まで <span id="st">60</span> 秒</div>
+      <button class="btn btn-sm btn-g" id="resend-s" style="display:none;margin:6px auto" onclick="startTimer('s')">SMSを再送信</button>
+    </div>
+    <div class="demo-code">デモ用コード：<b>6 5 4 3 2 1</b></div>
+    <button class="btn btn-p" onclick="verifySMS()">携帯電話番号を確認する ✓</button>
+    <button class="btn btn-g" onclick="go('email_verify')">← 前のステップへ</button>
+  </div>
+</div>`,
+
+// ─── STEP 3 — プロフィール ─────────────────────
+profile: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">📋</div>
+    <div class="logo-t">プロフィール入力</div>
+    <div class="logo-s">Step 3 / 4 — 所属・専門情報</div>
+  </div>
+  ${mkSteps(3)}
+  <div class="card">
+    <div class="ct">所属・専門情報の入力</div>
+    <div class="cs">事務局が審査する際の確認情報です。正確にご入力ください。</div>
+    <div class="frow">
+      <div class="fgrp"><label class="lbl">職種</label>
+        <select class="fi fsel"><option value="">選択してください</option>
+          ${['産婦人科医','新生児科医','小児科医','助産師','看護師','その他医療職'].map(o=>`<option>${o}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fgrp"><label class="lbl">都道府県</label>
+        <select class="fi fsel"><option value="">選択してください</option>
+          ${['福岡県','熊本県','大分県','宮崎県','鹿児島県','長崎県','佐賀県','沖縄県','その他'].map(p=>`<option>${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="fgrp"><label class="lbl">所属施設名</label><input class="fi" placeholder="〇〇大学病院・〇〇クリニック"></div>
+    <div class="fgrp"><label class="lbl">診療科・部門</label><input class="fi" placeholder="産婦人科 / 周産期センター / NICU など"></div>
+    <div class="fgrp"><label class="lbl">医籍番号・資格番号（任意）</label>
+      <input class="fi" placeholder="医師免許番号・助産師免許番号など">
+      <div class="fh">入力すると審査がスムーズになります。任意です。</div>
+    </div>
+    <div class="sep"></div>
+    <div class="fgrp"><label class="lbl">専門・経験タグ（複数選択可）</label>
+      <div style="margin-top:6px">
+        ${['周産期','小児','新生児蘇生(NCPR)','災害医学','メンタルケア','救急医療','集中治療','DMAT経験','DPAT経験','航空搬送経験'].map(t=>`<span class="tag" onclick="this.classList.toggle('on')">${t}</span>`).join('')}
+      </div>
+    </div>
+    <div class="fgrp"><label class="lbl">紹介者（任意）</label>
+      <input class="fi" placeholder="紹介してくださったリエゾンID または氏名">
+      <div class="fh">紹介者がいる場合は入力してください。審査の参考になります。</div>
+    </div>
+    <div class="fgrp"><label class="lbl">登録動機・備考（任意）</label>
+      <textarea class="fi fta" placeholder="DPLPに登録した動機など、伝えておきたいことがあればご記入ください"></textarea>
+    </div>
+    <button class="btn btn-p" onclick="submitApp()">申請内容を送信する →</button>
+    <button class="btn btn-g" onclick="go('sms_verify')">← 前のステップへ</button>
+  </div>
+</div>`,
+
+// ─── STEP 4 — 完了 ────────────────────────────
+done: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">✅</div>
+    <div class="logo-t">申請完了</div>
+    <div class="logo-s">Step 4 / 4 — 審査待ち</div>
+  </div>
+  ${mkSteps(4)}
+  <div class="card">
+    <div class="status-card sc-pend">
+      <div class="sc-ic">⏳</div>
+      <div class="sc-t" style="color:var(--ye)">申請を受け付けました</div>
+      <div class="sc-s">事務局が内容を確認しています</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:var(--fm)">受付番号: DPLP-2025-7284</div>
+    </div>
+    <div class="al al-ok"><span class="al-ic">✓</span><div>メールアドレス・携帯番号の<strong>本人確認が完了</strong>しています。</div></div>
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:13px">
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">今後の流れ</div>
+      <div class="flow-item"><div class="flow-num fn-done">✓</div><div><div class="flow-t">本人確認完了</div><div class="flow-s">メール・SMS認証済み</div></div></div>
+      <div class="flow-item"><div class="flow-num fn-act">2</div><div><div class="flow-t">事務局による審査</div><div class="flow-s">所属施設・職種の確認（通常1〜3営業日）</div></div></div>
+      <div class="flow-item"><div class="flow-num fn-wait">3</div><div><div class="flow-t">承認またはご連絡</div><div class="flow-s">審査結果をメールでお送りします</div></div></div>
+      <div class="flow-item"><div class="flow-num fn-wait">4</div><div><div class="flow-t">ログイン可能に</div><div class="flow-s">承認後すぐにシステムを利用できます</div></div></div>
+    </div>
+    <div class="al al-warn"><span class="al-ic">📧</span><div>審査結果は <strong>${S.email||'tanaka@hospital.jp'}</strong> にメールでお送りします。迷惑メールフォルダもご確認ください。</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1;margin-bottom:0" onclick="go('pending')">審査状況を確認</button>
+      <button class="btn" style="flex:1;margin-bottom:0" onclick="go('top')">トップへ戻る</button>
+    </div>
+  </div>
+</div>`,
+
+// ─── PENDING ──────────────────────────────────
+pending: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic"><span class="spin">⏳</span></div>
+    <div class="logo-t">申請状況の確認</div>
+  </div>
+  <div class="card">
+    <div class="status-card sc-pend">
+      <div class="sc-ic"><span class="spin">⏳</span></div>
+      <div class="sc-t" style="color:var(--ye)">審査中</div>
+      <div class="sc-s">通常1〜3営業日以内に審査結果をご連絡します</div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:16px;font-size:11px;margin-bottom:13px">
+      <span>メール: <span class="bdg bg">確認済み</span></span>
+      <span>SMS: <span class="bdg bg">確認済み</span></span>
+      <span>審査: <span class="bdg by">進行中</span></span>
+    </div>
+    <div class="sep"></div>
+    <div style="font-size:11px;color:var(--tx2);text-align:center;margin-bottom:13px;line-height:1.7">お問い合わせ: <span style="color:var(--gr)">dplp-admin@example.jp</span></div>
+    <div style="font-size:11px;font-weight:700;margin-bottom:8px">デモ操作：審査結果を確認する</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" style="flex:1;margin-bottom:0" onclick="go('approved')">✅ 承認された場合</button>
+      <button class="btn btn-d" style="flex:1;margin-bottom:0" onclick="go('rejected')">✕ 却下された場合</button>
+    </div>
+    <button class="btn btn-g" onclick="go('top')" style="margin-top:6px">← トップへ戻る</button>
+  </div>
+</div>`,
+
+// ─── APPROVED ─────────────────────────────────
+approved: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">🎉</div>
+    <div class="logo-t">登録完了</div>
+  </div>
+  <div class="card">
+    <div class="status-card sc-ok">
+      <div class="sc-ic">🎉</div>
+      <div class="sc-t" style="color:var(--gr)">登録が承認されました！</div>
+      <div class="sc-s">DPLPシステムへのアクセスが有効になりました</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:9px;padding:12px;margin-bottom:12px">
+      <div class="info-row"><span class="info-l">リエゾンID</span><span class="info-v">DPL-012</span></div>
+      <div class="info-row"><span class="info-l">ロール</span><span class="info-v">一般リエゾン</span></div>
+      <div class="info-row"><span class="info-l">担当コアリエゾン</span><span class="info-v">山本 裕子（大分県）</span></div>
+      <div class="info-row"><span class="info-l">初回ログイン期限</span><span class="info-v">承認から7日以内</span></div>
+    </div>
+    <div class="al al-info"><span class="al-ic">💡</span><div>初回ログイン後、プロフィールを完成させてステータスを更新してください。担当コアリエゾンから連絡が届くことがあります。</div></div>
+    <button class="btn btn-p" onclick="go('top')">ログイン画面へ →</button>
+  </div>
+</div>`,
+
+// ─── REJECTED ─────────────────────────────────
+rejected: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">📋</div>
+    <div class="logo-t">審査結果のお知らせ</div>
+  </div>
+  <div class="card">
+    <div class="status-card sc-err">
+      <div class="sc-ic">😔</div>
+      <div class="sc-t" style="color:#f87171">今回はご登録をお断りしております</div>
+      <div class="sc-s">申請内容の確認ができませんでした</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:9px;padding:12px;margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:6px">事務局からのコメント</div>
+      <div style="font-size:11px;color:var(--tx);line-height:1.7">所属施設の確認が取れませんでした。正確な施設名・診療科名でご再申請いただくか、事務局までお問い合わせください。</div>
+    </div>
+    <div class="al al-warn"><span class="al-ic">📧</span><div>ご不明な点は事務局（dplp-admin@example.jp）までお問い合わせください。再申請も可能です。</div></div>
+    <button class="btn btn-p" onclick="go('reg1')">再申請する</button>
+    <button class="btn btn-g" onclick="go('top')">← トップへ戻る</button>
+  </div>
+</div>`,
+
+// ─── ADMIN LOGIN ──────────────────────────────
+admin_login: ()=>`
+<div class="wrap">
+  <div class="logo-area">
+    <div class="logo-ic">⚙️</div>
+    <div class="logo-t">事務局ログイン</div>
+    <div class="logo-s">管理者専用ポータル</div>
+  </div>
+  <div class="card">
+    <div class="al al-err"><span class="al-ic">🔐</span><div>このページは事務局（管理者）専用です。一般リエゾンは「ログイン」からアクセスしてください。</div></div>
+    <div class="fgrp"><label class="lbl">管理者メールアドレス</label><input class="fi" type="email" value="admin@dplp.jp"></div>
+    <div class="fgrp"><label class="lbl">パスワード</label><input class="fi" type="password" value="••••••••"></div>
+    <div class="fgrp"><label class="lbl">二要素認証コード（2FA）</label>
+      <input class="fi" placeholder="認証アプリの6桁コード" type="number">
+      <div class="fh">Google Authenticator / Authy のコードを入力してください</div>
+    </div>
+    <button class="btn btn-p" onclick="go('admin')">管理者としてログイン</button>
+    <button class="btn btn-g" onclick="go('top')">← 一般ログインに戻る</button>
+  </div>
+</div>`,
+
+// ─── ADMIN DASHBOARD ──────────────────────────
+admin: ()=>{
+  const pend=APPS.filter(a=>a.st==='pending');
+  const appr=APPS.filter(a=>a.st==='approved');
+  const rej=APPS.filter(a=>a.st==='rejected');
+  const cur=S.adminTab==='pending'?pend:S.adminTab==='approved'?appr:rej;
+
+  const appCards=cur.map(a=>`
+  <div class="app-card">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:9px">
+      <div>
+        <div style="font-size:13px;font-weight:700">${a.name}</div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:2px">${a.occ} ／ ${a.pref} ／ ${a.inst}</div>
+        <div style="font-size:10px;color:var(--tx3)">${a.email} ／ ${a.tel}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="bdg ${a.st==='pending'?'by':a.st==='approved'?'bg':'br2'}">${a.st==='pending'?'審査待ち':a.st==='approved'?'承認済み':'却下'}</span>
+        <div style="font-size:9px;color:var(--tx3)">${a.dt}</div>
+        ${a.pid?`<div style="font-size:9px;color:var(--gr);font-family:var(--fm)">${a.pid}</div>`:''}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px">
+      <span class="bdg ${a.ev?'bg':'br2'}">📧 メール ${a.ev?'✓':'✕'}</span>
+      <span class="bdg ${a.sv?'bg':'br2'}">📱 SMS ${a.sv?'✓':'✕'}</span>
+      ${a.note?`<span style="font-size:10px;color:var(--ye)">⚠ ${a.note}</span>`:''}
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="showDetail(${a.id})">📋 詳細確認</button>
+      ${a.st==='pending'?`
+      <button class="btn btn-sm btn-p" onclick="approveApp(${a.id})">✓ 承認する</button>
+      <button class="btn btn-sm btn-d" onclick="openRejectModal(${a.id})">✕ 却下する</button>`:''}
+      ${a.st==='approved'?`<button class="btn btn-sm" onclick="revokeApp(${a.id})">承認を取り消す</button>`:''}
+    </div>
+  </div>`).join('');
+
+  return `
+<div style="background:var(--bg0);min-height:100vh">
+  <div class="admin-wrap">
+    <div class="admin-hdr">
+      <div style="width:32px;height:32px;background:rgba(240,168,40,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(240,168,40,0.25)">⚙️</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:700">DPLP 事務局 — 申請管理</div><div style="font-size:10px;color:var(--tx2)">新規登録申請の審査・承認管理</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="S.modal='notify';R()">📡 一斉通知</button>
+        <button class="btn btn-sm btn-g" onclick="go('top')">⏻ ログアウト</button>
+      </div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-n" style="color:var(--ye)">${pend.length}</div><div class="metric-l">審査待ち</div></div>
+      <div class="metric"><div class="metric-n" style="color:var(--gr)">${appr.length}</div><div class="metric-l">承認済み</div></div>
+      <div class="metric"><div class="metric-n" style="color:var(--re)">${rej.length}</div><div class="metric-l">却下</div></div>
+      <div class="metric"><div class="metric-n">${APPS.length}</div><div class="metric-l">総申請数</div></div>
+    </div>
+    <div class="tabs">
+      <div class="tab${S.adminTab==='pending'?' act':''}" onclick="S.adminTab='pending';R()">審査待ち <span class="bdg by" style="margin-left:3px">${pend.length}</span></div>
+      <div class="tab${S.adminTab==='approved'?' act':''}" onclick="S.adminTab='approved';R()">承認済み <span class="bdg bg" style="margin-left:3px">${appr.length}</span></div>
+      <div class="tab${S.adminTab==='rejected'?' act':''}" onclick="S.adminTab='rejected';R()">却下 <span class="bdg bn" style="margin-left:3px">${rej.length}</span></div>
+    </div>
+    ${cur.length?appCards:`<div style="text-align:center;padding:24px;color:var(--tx3);font-size:12px">該当する申請がありません</div>`}
+    <div class="sep"></div>
+    <div style="font-size:12px;font-weight:700;margin-bottom:10px">セキュリティ設計のポイント</div>
+    <div class="sec-grid">
+      ${[
+        {ic:'✓',t:'メール＋SMS 二重本人確認',d:'どちらか一方だけでは不十分',c:'var(--gr)'},
+        {ic:'✓',t:'事務局による手動承認',d:'自動登録なし・人が目視審査',c:'var(--gr)'},
+        {ic:'✓',t:'2FA 管理者必須',d:'事務局ログインには2FAを義務付け',c:'var(--gr)'},
+        {ic:'✓',t:'RLS（行レベルセキュリティ）',d:'Supabaseで自動アクセス制御',c:'var(--gr)'},
+        {ic:'!',t:'医籍番号確認を推奨',d:'審査精度を高める任意情報',c:'var(--ye)'},
+        {ic:'!',t:'定期アカウント監査',d:'長期未ログインの定期確認',c:'var(--ye)'},
+      ].map(s=>`<div class="sec-it"><div class="sec-ic" style="color:${s.c}">${s.ic}</div><div><div style="font-size:11px;font-weight:600">${s.t}</div><div style="font-size:10px;color:var(--tx2);margin-top:2px">${s.d}</div></div></div>`).join('')}
+    </div>
+  </div>
+  ${rAdminModal()}
+</div>`;
+},
+
+// ─── 利用規約 ─────────────────────────────────
+terms: ()=>`
+<div class="wrap">
+  <div class="logo-area"><div class="logo-t">利用規約</div></div>
+  <div class="card">
+    <div style="font-size:11px;color:var(--tx2);line-height:1.9">
+      <p style="font-weight:700;color:var(--tx);margin-bottom:8px">DPLP Dashboard 利用規約</p>
+      <p><strong style="color:var(--tx)">第1条（目的）</strong><br>本システムは、災害時における小児・周産期医療支援を目的としたリエゾン活動管理システムです。</p>
+      <div class="sep"></div>
+      <p><strong style="color:var(--tx)">第2条（利用資格）</strong><br>事務局が認定した医療従事者（産婦人科医、新生児科医、小児科医、助産師、看護師等）のみが利用できます。</p>
+      <div class="sep"></div>
+      <p><strong style="color:var(--tx)">第3条（禁止事項）</strong><br>① 虚偽の情報による登録<br>② 第三者へのアカウント情報の提供<br>③ システム内個人情報の外部漏洩<br>④ 目的外使用</p>
+      <div class="sep"></div>
+      <p><strong style="color:var(--tx)">第4条（情報管理）</strong><br>登録情報は厳重に管理し、災害対応目的以外には使用しません。</p>
+    </div>
+    <div class="sep"></div>
+    <button class="btn btn-p" onclick="agreeItem('a1','ck1');go('reg1');toast('利用規約に同意しました')">同意して戻る</button>
+    <button class="btn btn-g" onclick="go('reg1')">戻る（同意しない）</button>
+  </div>
+</div>`,
+
+// ─── プライバシーポリシー ──────────────────────
+privacy: ()=>`
+<div class="wrap">
+  <div class="logo-area"><div class="logo-t">プライバシーポリシー</div></div>
+  <div class="card">
+    <div style="font-size:11px;color:var(--tx2);line-height:1.9">
+      <p style="font-weight:700;color:var(--tx);margin-bottom:8px">個人情報の取り扱いについて</p>
+      <p><strong style="color:var(--tx)">収集する情報</strong><br>氏名、メールアドレス、携帯電話番号、所属施設、職種、GPS位置情報（任意）</p>
+      <div class="sep"></div>
+      <p><strong style="color:var(--tx)">利用目的</strong><br>① リエゾン活動の管理・調整<br>② 災害時の緊急連絡<br>③ 本人確認</p>
+      <div class="sep"></div>
+      <p><strong style="color:var(--tx)">第三者提供</strong><br>担当コアリエゾン・事務局内での共有のみ。外部への提供は一切行いません。</p>
+      <div class="sep"></div>
+      <p><strong style="color:var(--tx)">データ保管</strong><br>Supabase（国内リージョン）でAES-256暗号化して保管します。退会後1年で完全削除します。</p>
+    </div>
+    <div class="sep"></div>
+    <button class="btn btn-p" onclick="agreeItem('a2','ck2');go('reg1');toast('プライバシーポリシーに同意しました')">同意して戻る</button>
+    <button class="btn btn-g" onclick="go('reg1')">戻る（同意しない）</button>
+  </div>
+</div>`,
+};
+
+// ── ADMIN MODAL ──
+function rAdminModal() {
+  if (!S.modal) return '';
+  let body='', title='';
+
+  if (S.modal==='detail' && S.selApp) {
+    const a=S.selApp;
+    title=`申請詳細 — ${a.name}`;
+    body=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px">
+        ${[{l:'氏名',v:a.name},{l:'メール',v:a.email},{l:'電話番号',v:a.tel},{l:'職種',v:a.occ},{l:'都道府県',v:a.pref},{l:'所属施設',v:a.inst}].map(r=>`
+        <div style="padding:7px 9px;background:var(--bg3);border-radius:7px">
+          <div style="font-size:9px;color:var(--tx3);margin-bottom:2px">${r.l}</div>
+          <div style="font-size:11px;font-weight:600">${r.v}</div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="flex:1;padding:9px;border-radius:8px;text-align:center;background:${a.ev?'var(--gr3)':'var(--re2)'};border:1px solid ${a.ev?'rgba(16,232,106,0.2)':'rgba(232,72,72,0.2)'};color:${a.ev?'var(--gr)':'#f87171'};font-size:11px;font-weight:600">
+          📧 メール認証 ${a.ev?'✓ 完了':'✕ 未完了'}</div>
+        <div style="flex:1;padding:9px;border-radius:8px;text-align:center;background:${a.sv?'var(--gr3)':'var(--re2)'};border:1px solid ${a.sv?'rgba(16,232,106,0.2)':'rgba(232,72,72,0.2)'};color:${a.sv?'var(--gr)':'#f87171'};font-size:11px;font-weight:600">
+          📱 SMS認証 ${a.sv?'✓ 完了':'✕ 未完了'}</div>
+      </div>
+      ${a.note?`<div class="al al-warn"><span class="al-ic">⚠</span><div>${a.note}</div></div>`:''}
+      ${a.st==='pending'?`<div style="display:flex;gap:8px">
+        <button class="btn btn-p" style="flex:1;margin-bottom:0" onclick="approveApp(${a.id});closeModal()">✓ 承認する</button>
+        <button class="btn btn-d" style="flex:1;margin-bottom:0" onclick="openRejectModal(${a.id})">✕ 却下する</button>
+      </div>`:''}`;
+  }
+  else if (S.modal==='reject' && S.selApp) {
+    const a=S.selApp;
+    title=`申請を却下する — ${a.name}`;
+    body=`
+      <div class="al al-err"><span class="al-ic">⚠</span><div>却下すると申請者にメールで通知されます。</div></div>
+      <div class="fgrp"><label class="lbl">却下理由（申請者へのメールに記載されます）</label>
+        <textarea class="fi fta" id="rej-note" placeholder="例：所属施設の確認が取れませんでした。正確な施設名でご再申請ください。"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-d" style="flex:1;margin-bottom:0" onclick="confirmReject(${a.id})">却下する</button>
+        <button class="btn" style="flex:1;margin-bottom:0" onclick="closeModal()">キャンセル</button>
+      </div>`;
+  }
+  else if (S.modal==='notify') {
+    title='申請者への一斉通知';
+    body=`
+      <div class="fgrp"><label class="lbl">送信対象</label><select class="fi fsel"><option>審査待ち全員</option><option>承認済み全員</option><option>全申請者</option></select></div>
+      <div class="fgrp"><label class="lbl">件名</label><input class="fi" placeholder="件名を入力"></div>
+      <div class="fgrp"><label class="lbl">本文</label><textarea class="fi fta"></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-p" style="flex:1;margin-bottom:0" onclick="closeModal();toast('通知を送信しました','inf')">送信する</button>
+        <button class="btn" style="flex:1;margin-bottom:0" onclick="closeModal()">キャンセル</button>
+      </div>`;
+  }
+  else return '';
+
+  return `<div class="modal-ov open" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box">
+      <div class="modal-t">${title}<span class="modal-x" onclick="closeModal()">×</span></div>
+      ${body}
+      <button class="btn btn-g" onclick="closeModal()" style="margin-top:6px">閉じる</button>
+    </div>
+  </div>`;
+}
+
+// ── ACTIONS ──
+function go(v) {
+  S.view=v; S.modal=null;
+  if(v==='email_verify'){
+    S.email=document.getElementById('r-email')?.value||'tanaka@hospital.jp';
+    S.phone=document.getElementById('r-phone')?.value||'090-1234-5678';
+    R();setTimeout(()=>startTimer('e'),100);
+  } else if(v==='sms_verify'){
+    R();setTimeout(()=>startTimer('s'),100);
+  } else { R(); }
+}
+
+function allAgreed(){return S.agree.a1&&S.agree.a2&&S.agree.a3;}
+
+function toggleChk(id,key){
+  S.agree[key]=!S.agree[key];
+  const el=document.getElementById(id);
+  if(el){el.classList.toggle('on',S.agree[key]);el.textContent=S.agree[key]?'✓':'';}
+  const btn=document.getElementById('btn-n1');
+  if(btn)btn.disabled=!allAgreed();
+}
+
+function agreeItem(key,ckId){
+  S.agree[key]=true;
+}
+
+function checkPw(v){
+  const chk=[/.{8,}/,/[A-Z]/,/[a-z]/,/[0-9]/,/[^A-Za-z0-9]/];
+  const sc=chk.filter(r=>r.test(v)).length;
+  const cols=['var(--bg5)','var(--re)','var(--ye)','var(--tl)','var(--gr)'];
+  const labs=['','弱い','普通','良好','強い'];
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('ps'+i);
+    if(el)el.style.background=sc>=i?cols[Math.min(sc,4)]:'var(--bg5)';
+  });
+  const msg=document.getElementById('pw-msg');
+  if(msg)msg.textContent=v?'強度: '+labs[Math.min(sc,4)]:'強度: 未入力';
+}
+
+function checkPw2(v){
+  const pw=document.getElementById('r-pw')?.value||'';
+  const msg=document.getElementById('pw2-msg');
+  if(!msg||!v)return;
+  msg.textContent=v===pw?'✓ パスワードが一致しています':'✕ パスワードが一致しません';
+  msg.className='fh '+(v===pw?'ok':'err');
+}
+
+function next1(){
+  if(!allAgreed()){toast('同意事項にすべてチェックしてください','wrn');return;}
+  go('email_verify');
+}
+
+function otpNext(el,pfx,i,max){
+  el.classList.toggle('ok',el.value.length>0);
+  if(el.value.length===1&&i<max-1)document.getElementById(pfx+(i+1))?.focus();
+}
+function otpBack(e,el,pfx,i){
+  if(e.key==='Backspace'&&el.value===''&&i>0){
+    const p=document.getElementById(pfx+(i-1));
+    if(p){p.value='';p.classList.remove('ok');p.focus();}
+  }
+}
+function getOtp(pfx,n){return Array.from({length:n},(_,i)=>document.getElementById(pfx+i)?.value||'').join('');}
+
+function startTimer(type){
+  const isE=type==='e';
+  const sid=isE?'et':'st';
+  const bid=isE?'resend-e':'resend-s';
+  const wid=isE?'e-timer-wrap':'s-timer-wrap';
+  let t=60;
+  if(isE&&eTimer)clearInterval(eTimer);
+  if(!isE&&sTimer)clearInterval(sTimer);
+  const wrap=document.getElementById(wid);
+  const btn=document.getElementById(bid);
+  if(wrap)wrap.style.display='';
+  if(btn)btn.style.display='none';
+  const iv=setInterval(()=>{
+    t--;
+    const sp=document.getElementById(sid);
+    if(sp)sp.textContent=t;
+    if(t<=0){
+      clearInterval(iv);
+      if(wrap)wrap.style.display='none';
+      if(btn){btn.style.display='inline-flex';}
+    }
+  },1000);
+  if(isE)eTimer=iv; else sTimer=iv;
+}
+
+function verifyEmail(){
+  const code=getOtp('oe',6);
+  if(code.length<6){toast('6桁のコードをすべて入力してください','wrn');return;}
+  if(code!=='123456'){toast('コードが正しくありません（デモ: 123456）','err');return;}
+  if(eTimer)clearInterval(eTimer);
+  toast('メールアドレスを確認しました ✓','ok');
+  go('sms_verify');
+}
+
+function verifySMS(){
+  const code=getOtp('os',6);
+  if(code.length<6){toast('6桁のコードをすべて入力してください','wrn');return;}
+  if(code!=='654321'){toast('コードが正しくありません（デモ: 654321）','err');return;}
+  if(sTimer)clearInterval(sTimer);
+  toast('携帯電話番号を確認しました ✓','ok');
+  go('profile');
+}
+
+function submitApp(){
+  go('done');
+  toast('申請を送信しました。審査結果をお待ちください。','ok');
+}
+
+function showDetail(id){
+  S.selApp=APPS.find(a=>a.id===id);
+  S.modal='detail';
+  R();
+}
+
+function approveApp(id){
+  const a=APPS.find(x=>x.id===id);if(!a)return;
+  a.st='approved';a.pid='DPL-0'+(10+id);
+  S.adminTab='approved';S.modal=null;S.selApp=null;
+  R();toast(`${a.name}さんの申請を承認しました ✓`,'ok');
+}
+
+function openRejectModal(id){
+  S.selApp=APPS.find(a=>a.id===id);
+  S.modal='reject';R();
+}
+
+function confirmReject(id){
+  const a=APPS.find(x=>x.id===id);if(!a)return;
+  const note=document.getElementById('rej-note')?.value||'審査の結果、登録をお断りします';
+  a.st='rejected';a.note=note;
+  S.adminTab='rejected';S.modal=null;S.selApp=null;
+  R();toast(`${a.name}さんの申請を却下しました`,'wrn');
+}
+
+function revokeApp(id){
+  const a=APPS.find(x=>x.id===id);if(!a)return;
+  a.st='pending';a.pid='';
+  S.adminTab='pending';R();
+  toast(`${a.name}さんの承認を取り消しました`,'wrn');
+}
+
+function closeModal(){S.modal=null;S.selApp=null;R();}
+
+// INIT
+R();
+</script>
+</body>
+</html>
